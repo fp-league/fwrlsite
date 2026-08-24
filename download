@@ -1,0 +1,12 @@
+# Never commit real secrets
+bot/.env
+
+# Python
+bot/__pycache__/
+bot/*.pyc
+bot/.venv/
+bot/venv/
+
+# OS junk
+.DS_Store
+Thumbs.db

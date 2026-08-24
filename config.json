@@ -1,0 +1,31 @@
+{
+  "_comment": "Run calibrate.py once at your race resolution to fill these in. All coordinates are pixel boxes [x, y, width, height] on the primary monitor.",
+  "resolution": [1920, 1080],
+  "capture_interval_seconds": 0.75,
+  "confirm_frames": 3,
+  "bot_endpoint": "http://127.0.0.1:8765/update",
+  "regions": {
+    "position": {
+      "box": [0, 0, 0, 0],
+      "type": "ocr",
+      "whitelist": "P0123456789",
+      "notes": "Crop tightly around just the position number, e.g. 'P3'."
+    },
+    "lap": {
+      "box": [0, 0, 0, 0],
+      "type": "ocr",
+      "whitelist": "0123456789/LAP ",
+      "notes": "Crop around the lap counter, e.g. '2/3'."
+    },
+    "pit_indicator": {
+      "box": [0, 0, 0, 0],
+      "type": "template",
+      "template_image": "pit_icon_template.png",
+      "match_threshold": 0.8,
+      "notes": "Crop around where the pit icon/indicator appears. Save a reference crop as pit_icon_template.png for template matching."
+    }
+  },
+  "drivers": {
+    "_comment": "Map a race/session to a driver so updates can be attributed. Fill in per-race or pass driver name as a capture_agent.py argument."
+  }
+}

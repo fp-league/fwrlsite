@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FWRL Admin</title>
+<style>
+  :root{
+    --bg:#0a0a0d; --bg-panel:#131318; --bg-panel-2:#1a1a22;
+    --accent:#ff2e4d; --accent-2:#00e0c6; --text:#e8e8ee; --text-dim:#8a8a98; --border:#26262f;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--text); font-family:'Segoe UI', Roboto, Arial, sans-serif; min-height:100vh;}
+  a{color:inherit;}
+  input, select, button{font-family:inherit;}
+
+  /* Login screen */
+  .login-wrap{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;}
+  .login-card{
+    background:var(--bg-panel); border:1px solid var(--border); border-radius:14px;
+    padding:40px; width:100%; max-width:360px; text-align:center;
+  }
+  .login-card h1{font-size:20px; font-weight:900; margin-bottom:6px;}
+  .login-card p{color:var(--text-dim); font-size:13px; margin-bottom:24px;}
+  .login-card input{
+    width:100%; background:var(--bg-panel-2); border:1px solid var(--border); color:var(--text);
+    padding:12px 14px; border-radius:8px; font-size:14px; margin-bottom:12px;
+  }
+  .login-card button{
+    width:100%; background:var(--accent); color:#fff; font-weight:800; border:none;
+    padding:12px; border-radius:8px; cursor:pointer; text-transform:uppercase; font-size:13px; letter-spacing:0.5px;
+  }
+  .login-error{color:var(--accent); font-size:12px; margin-top:10px; min-height:16px;}
+  .login-note{
+    margin-top:20px; font-size:11px; color:var(--text-dim); line-height:1.5;
+    border-top:1px solid var(--border); padding-top:16px; text-align:left;
+  }
+  .discord-login-btn{
+    width:100%; background:#5865F2; color:#fff; font-weight:800; border:none;
+    padding:13px; border-radius:8px; cursor:pointer; font-size:14px;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .discord-login-btn:hover{background:#4a54d6;}
+  .bot-url-field{margin-top:16px; text-align:left;}
+  .bot-url-field label{font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px;}
+  .bot-url-field input{font-size:12px; padding:9px 12px;}
+  .login-status{font-size:12px; color:var(--text-dim); margin-top:14px; min-height:16px;}
+
+  /* Dashboard */
+  .dash{display:none; max-width:1100px; margin:0 auto; padding:32px 24px;}
+  .dash.active{display:block;}
+  .dash-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px;}
+  .dash-header h1{font-size:24px; font-weight:900;}
+  .dash-header a.back{font-size:13px; color:var(--text-dim); text-decoration:underline;}
+  .logout-btn{
+    background:none; border:1px solid var(--border); color:var(--text-dim); padding:8px 14px;
+    border-radius:6px; cursor:pointer; font-size:12px;
+  }
+
+  .banner{
+    background:rgba(255,210,63,0.08); border:1px solid rgba(255,210,63,0.25); color:#ffd23f;
+    font-size:13px; padding:12px 16px; border-radius:8px; margin-bottom:24px; line-height:1.5;
+  }
+
+  .tabs{display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:24px; flex-wrap:wrap;}
+  .tab-btn{
+    background:none; border:none; color:var(--text-dim); padding:12px 18px; cursor:pointer;
+    font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.5px; border-bottom:2px solid transparent;
+  }
+  .tab-btn.active{color:var(--text); border-bottom-color:var(--accent);}
+
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  table{width:100%; border-collapse:collapse; background:var(--bg-panel); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:20px;}
+  th{text-align:left; padding:10px 12px; font-size:11px; text-transform:uppercase; color:var(--text-dim); background:var(--bg-panel-2); border-bottom:1px solid var(--border);}
+  td{padding:8px 10px; border-bottom:1px solid var(--border);}
+  tr:last-child td{border-bottom:none;}
+  td input, td select{
+    width:100%; background:var(--bg-panel-2); border:1px solid var(--border); color:var(--text);
+    padding:7px 8px; border-radius:5px; font-size:13px;
+  }
+  .row-actions{display:flex; gap:6px;}
+  .icon-btn{
+    background:none; border:1px solid var(--border); color:var(--text-dim); cursor:pointer;
+    width:28px; height:28px; border-radius:5px; font-size:13px;
+  }
+  .icon-btn:hover{color:var(--accent); border-color:var(--accent);}
+
+  .btn{
+    background:var(--bg-panel-2); border:1px solid var(--border); color:var(--text);
+    padding:9px 16px; border-radius:7px; cursor:pointer; font-size:13px; font-weight:700;
+  }
+  .btn:hover{border-color:var(--accent-2);}
+  .btn-primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .btn-primary:hover{border-color:var(--accent);}
+  .btn-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;}
+
+  .save-status{font-size:12px; color:var(--accent-2); margin-left:8px;}
+
+  .export-box{
+    background:var(--bg-panel); border:1px solid var(--border); border-radius:10px;
+    padding:20px; margin-top:32px;
+  }
+  .export-box h3{font-size:15px; margin-bottom:8px;}
+  .export-box p{font-size:13px; color:var(--text-dim); line-height:1.6; margin-bottom:14px;}
+</style>
+</head>
+<body>
+
+<div class="login-wrap" id="login-screen">
+  <div class="login-card">
+    <h1>FWRL Admin</h1>
+    <p>Sign in with Discord. Only members with the league admin role in the FWRL server get in.</p>
+    <button class="discord-login-btn" id="discord-login-btn">
+      <span>🎮</span> Login with Discord
+    </button>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-status" id="login-status"></div>
+    <div class="bot-url-field">
+      <label for="bot-url-input">FWRL bot address</label>
+      <input type="text" id="bot-url-input" placeholder="http://127.0.0.1:8765" />
+    </div>
+    <div class="login-note">
+      Access is checked live against your role in the FWRL Discord server — no password is stored anywhere. This requires <code>bot.py</code> to be running and reachable at the address above (defaults to your own machine on port 8765; if the bot runs elsewhere, e.g. on the race host PC, update the address to wherever it's reachable, like a LAN IP).
+    </div>
+  </div>
+</div>
+
+<div class="dash" id="dashboard">
+  <div class="dash-header">
+    <h1>🏁 FWRL Admin Dashboard</h1>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <span class="save-status" id="welcome-user"></span>
+      <a class="back" href="index.html">← Back to site</a>
+      <button class="logout-btn" id="logout-btn">Log out</button>
+    </div>
+  </div>
+
+  <div class="banner">
+    Edits here save to <strong>this browser only</strong> (nothing is shared live to site visitors — there's no backend for the data itself). When you're done, use <strong>Export data.js</strong> below and re-upload that file to your host to actually publish changes.
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="standings">Standings</button>
+    <button class="tab-btn" data-tab="schedule">Schedule</button>
+    <button class="tab-btn" data-tab="teams">Teams</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-standings">
+    <table>
+      <thead><tr><th>Rank</th><th>Driver</th><th>Team</th><th>Color</th><th>Points</th><th></th></tr></thead>
+      <tbody id="standings-rows"></tbody>
+    </table>
+    <div class="btn-row">
+      <button class="btn" id="add-standing">+ Add Driver</button>
+      <button class="btn btn-primary" id="save-standings">Save</button>
+      <span class="save-status" id="standings-status"></span>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-schedule">
+    <table>
+      <thead><tr><th>Round</th><th>Name</th><th>Track</th><th>Date</th><th>Status</th><th></th></tr></thead>
+      <tbody id="schedule-rows"></tbody>
+    </table>
+    <div class="btn-row">
+      <button class="btn" id="add-race">+ Add Race</button>
+      <button class="btn btn-primary" id="save-schedule">Save</button>
+      <span class="save-status" id="schedule-status"></span>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-teams">
+    <table>
+      <thead><tr><th>Team</th><th>Color</th><th>Drivers (comma-separated)</th><th>Points</th><th></th></tr></thead>
+      <tbody id="teams-rows"></tbody>
+    </table>
+    <div class="btn-row">
+      <button class="btn" id="add-team">+ Add Team</button>
+      <button class="btn btn-primary" id="save-teams">Save</button>
+      <span class="save-status" id="teams-status"></span>
+    </div>
+  </div>
+
+  <div class="export-box">
+    <h3>Publish changes</h3>
+    <p>Downloads a new <code>data.js</code> containing everything currently saved in this dashboard. Replace the <code>data.js</code> file on your hosting with this one to make the changes live on the public site.</p>
+    <button class="btn btn-primary" id="export-btn">⬇ Export data.js</button>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+  // --- Auth: Discord OAuth2, verified server-side against the FWRL bot ------
+  var SESSION_KEY = "fwrl_admin_session_token";
+  var BOT_URL_KEY = "fwrl_admin_bot_url";
+  var DEFAULT_BOT_URL = "http://127.0.0.1:8765";
+
+  var botUrlInput = document.getElementById("bot-url-input");
+  botUrlInput.value = localStorage.getItem(BOT_URL_KEY) || DEFAULT_BOT_URL;
+  botUrlInput.addEventListener("change", function(){
+    localStorage.setItem(BOT_URL_KEY, botUrlInput.value.trim());
+  });
+
+  function getBotUrl(){
+    return (localStorage.getItem(BOT_URL_KEY) || DEFAULT_BOT_URL).replace(/\/$/, "");
+  }
+
+  function showDashboard(username){
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("dashboard").classList.add("active");
+    document.getElementById("welcome-user").textContent = username ? ("Signed in as " + username) : "";
+    loadData();
+  }
+
+  function setLoginError(msg){
+    document.getElementById("login-error").textContent = msg || "";
+  }
+
+  function setLoginStatus(msg){
+    document.getElementById("login-status").textContent = msg || "";
+  }
+
+  var AUTH_ERROR_MESSAGES = {
+    denied: "Discord login was cancelled.",
+    invalid_state: "Login session expired — try again.",
+    token_exchange_failed: "Discord rejected the login (check bot.py's Discord app credentials).",
+    identity_fetch_failed: "Couldn't fetch your Discord identity — try again.",
+    not_authorized: "You're logged into Discord, but you don't have the admin role in the FWRL server."
+  };
+
+  document.getElementById("discord-login-btn").addEventListener("click", function(){
+    setLoginError("");
+    var returnTo = window.location.href.split("#")[0];
+    window.location.href = getBotUrl() + "/auth/login?return_to=" + encodeURIComponent(returnTo);
+  });
+
+  document.getElementById("logout-btn").addEventListener("click", function(){
+    sessionStorage.removeItem(SESSION_KEY);
+    location.reload();
+  });
+
+  function verifyAndEnter(token){
+    setLoginStatus("Checking your admin access...");
+    fetch(getBotUrl() + "/auth/verify", {
+      headers: { Authorization: "Bearer " + token }
+    }).then(function(resp){
+      if (!resp.ok) throw new Error("not authorized");
+      return resp.json();
+    }).then(function(data){
+      sessionStorage.setItem(SESSION_KEY, token);
+      setLoginStatus("");
+      showDashboard(data.username);
+    }).catch(function(){
+      sessionStorage.removeItem(SESSION_KEY);
+      setLoginStatus("");
+      setLoginError("Couldn't verify your session. Make sure bot.py is running and reachable at the address below, then try again.");
+    });
+  }
+
+  function initAuth(){
+    var hash = window.location.hash || "";
+
+    if (hash.indexOf("token=") !== -1){
+      var token = hash.split("token=")[1].split("&")[0];
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+      verifyAndEnter(token);
+      return;
+    }
+
+    if (hash.indexOf("auth_error=") !== -1){
+      var code = decodeURIComponent(hash.split("auth_error=")[1].split("&")[0]);
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+      setLoginError(AUTH_ERROR_MESSAGES[code] || ("Login failed: " + code));
+      return;
+    }
+
+    var existing = sessionStorage.getItem(SESSION_KEY);
+    if (existing){
+      verifyAndEnter(existing);
+    }
+  }
+
+  initAuth();
+
+  // --- Data (loads saved draft from localStorage if present, else data.js) ---
+  var state = { standings: [], schedule: [], teams: [] };
+
+  function loadData(){
+    var savedStandings = localStorage.getItem("fwrl_draft_standings");
+    var savedSchedule = localStorage.getItem("fwrl_draft_schedule");
+    var savedTeams = localStorage.getItem("fwrl_draft_teams");
+
+    state.standings = savedStandings ? JSON.parse(savedStandings) : JSON.parse(JSON.stringify(STANDINGS || []));
+    state.schedule = savedSchedule ? JSON.parse(savedSchedule) : JSON.parse(JSON.stringify(SCHEDULE || []));
+    state.teams = savedTeams ? JSON.parse(savedTeams) : JSON.parse(JSON.stringify(TEAMS || []));
+
+    renderStandingsTable();
+    renderScheduleTable();
+    renderTeamsTable();
+  }
+
+  // --- Tabs -----------------------------------------------------------------
+  document.querySelectorAll(".tab-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      document.querySelectorAll(".tab-btn").forEach(function(b){ b.classList.remove("active"); });
+      document.querySelectorAll(".tab-panel").forEach(function(p){ p.classList.remove("active"); });
+      btn.classList.add("active");
+      document.getElementById("tab-" + btn.getAttribute("data-tab")).classList.add("active");
+    });
+  });
+
+  // --- Standings table --------------------------------------------------
+  function renderStandingsTable(){
+    var body = document.getElementById("standings-rows");
+    body.innerHTML = "";
+    state.standings.forEach(function(s, i){
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td><input type='number' data-field='rank' data-i='" + i + "' value='" + s.rank + "'></td>" +
+        "<td><input type='text' data-field='driver' data-i='" + i + "' value='" + escapeAttr(s.driver) + "'></td>" +
+        "<td><input type='text' data-field='team' data-i='" + i + "' value='" + escapeAttr(s.team) + "'></td>" +
+        "<td><input type='text' data-field='color' data-i='" + i + "' value='" + escapeAttr(s.color) + "'></td>" +
+        "<td><input type='number' data-field='points' data-i='" + i + "' value='" + s.points + "'></td>" +
+        "<td><button class='icon-btn' data-remove='" + i + "'>✕</button></td>";
+      body.appendChild(tr);
+    });
+    body.querySelectorAll("input").forEach(function(inp){
+      inp.addEventListener("input", function(){
+        var i = parseInt(inp.getAttribute("data-i"), 10);
+        var field = inp.getAttribute("data-field");
+        var val = inp.type === "number" ? Number(inp.value) : inp.value;
+        state.standings[i][field] = val;
+      });
+    });
+    body.querySelectorAll("[data-remove]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        state.standings.splice(parseInt(btn.getAttribute("data-remove"), 10), 1);
+        renderStandingsTable();
+      });
+    });
+  }
+
+  document.getElementById("add-standing").addEventListener("click", function(){
+    state.standings.push({rank: state.standings.length + 1, driver: "New Driver", team: "", color: "#ff2e4d", points: 0});
+    renderStandingsTable();
+  });
+
+  document.getElementById("save-standings").addEventListener("click", function(){
+    localStorage.setItem("fwrl_draft_standings", JSON.stringify(state.standings));
+    flashSaved("standings-status");
+  });
+
+  // --- Schedule table -----------------------------------------------------
+  function renderScheduleTable(){
+    var body = document.getElementById("schedule-rows");
+    body.innerHTML = "";
+    state.schedule.forEach(function(r, i){
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td><input type='number' data-field='round' data-i='" + i + "' value='" + r.round + "'></td>" +
+        "<td><input type='text' data-field='name' data-i='" + i + "' value='" + escapeAttr(r.name) + "'></td>" +
+        "<td><input type='text' data-field='track' data-i='" + i + "' value='" + escapeAttr(r.track) + "'></td>" +
+        "<td><input type='text' data-field='date' data-i='" + i + "' value='" + escapeAttr(r.date) + "'></td>" +
+        "<td><select data-field='status' data-i='" + i + "'>" +
+          ["done","live","upcoming"].map(function(s){ return "<option value='" + s + "'" + (r.status===s?" selected":"") + ">" + s + "</option>"; }).join("") +
+        "</select></td>" +
+        "<td><button class='icon-btn' data-remove='" + i + "'>✕</button></td>";
+      body.appendChild(tr);
+    });
+    body.querySelectorAll("input,select").forEach(function(inp){
+      inp.addEventListener("input", function(){
+        var i = parseInt(inp.getAttribute("data-i"), 10);
+        var field = inp.getAttribute("data-field");
+        var val = inp.type === "number" ? Number(inp.value) : inp.value;
+        state.schedule[i][field] = val;
+      });
+      inp.addEventListener("change", function(){
+        var i = parseInt(inp.getAttribute("data-i"), 10);
+        var field = inp.getAttribute("data-field");
+        state.schedule[i][field] = inp.value;
+      });
+    });
+    body.querySelectorAll("[data-remove]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        state.schedule.splice(parseInt(btn.getAttribute("data-remove"), 10), 1);
+        renderScheduleTable();
+      });
+    });
+  }
+
+  document.getElementById("add-race").addEventListener("click", function(){
+    state.schedule.push({round: state.schedule.length + 1, name: "New Race", track: "", date: "", status: "upcoming"});
+    renderScheduleTable();
+  });
+
+  document.getElementById("save-schedule").addEventListener("click", function(){
+    localStorage.setItem("fwrl_draft_schedule", JSON.stringify(state.schedule));
+    flashSaved("schedule-status");
+  });
+
+  // --- Teams table ----------------------------------------------------------
+  function renderTeamsTable(){
+    var body = document.getElementById("teams-rows");
+    body.innerHTML = "";
+    state.teams.forEach(function(t, i){
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td><input type='text' data-field='name' data-i='" + i + "' value='" + escapeAttr(t.name) + "'></td>" +
+        "<td><input type='text' data-field='color' data-i='" + i + "' value='" + escapeAttr(t.color) + "'></td>" +
+        "<td><input type='text' data-field='drivers' data-i='" + i + "' value='" + escapeAttr((t.drivers||[]).join(", ")) + "'></td>" +
+        "<td><input type='number' data-field='points' data-i='" + i + "' value='" + t.points + "'></td>" +
+        "<td><button class='icon-btn' data-remove='" + i + "'>✕</button></td>";
+      body.appendChild(tr);
+    });
+    body.querySelectorAll("input").forEach(function(inp){
+      inp.addEventListener("input", function(){
+        var i = parseInt(inp.getAttribute("data-i"), 10);
+        var field = inp.getAttribute("data-field");
+        if (field === "drivers"){
+          state.teams[i].drivers = inp.value.split(",").map(function(s){ return s.trim(); }).filter(Boolean);
+        } else {
+          state.teams[i][field] = inp.type === "number" ? Number(inp.value) : inp.value;
+        }
+      });
+    });
+    body.querySelectorAll("[data-remove]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        state.teams.splice(parseInt(btn.getAttribute("data-remove"), 10), 1);
+        renderTeamsTable();
+      });
+    });
+  }
+
+  document.getElementById("add-team").addEventListener("click", function(){
+    state.teams.push({name: "New Team", color: "#ff2e4d", drivers: [], points: 0});
+    renderTeamsTable();
+  });
+
+  document.getElementById("save-teams").addEventListener("click", function(){
+    localStorage.setItem("fwrl_draft_teams", JSON.stringify(state.teams));
+    flashSaved("teams-status");
+  });
+
+  // --- Export ----------------------------------------------------------------
+  document.getElementById("export-btn").addEventListener("click", function(){
+    var out = "/*\n  FWRL shared site data.\n\n  This file is the site's \"database\" -- the public pages (index.html,\n  standings.html, schedule.html, teams.html, discord.html) and\n  fwrl-admin.html (admin dashboard) all load it. Replace the data.js on\n  your host with this exported file to publish the changes made in the\n  dashboard.\n*/\n\n";
+    out += "var DISCORD_INVITE = " + JSON.stringify(typeof DISCORD_INVITE !== "undefined" ? DISCORD_INVITE : "https://discord.gg/fwrl") + ";\n\n";
+    out += "var TEAMS = " + JSON.stringify(state.teams, null, 2) + ";\n\n";
+    out += "var STANDINGS = " + JSON.stringify(state.standings, null, 2) + ";\n\n";
+    out += "var SCHEDULE = " + JSON.stringify(state.schedule, null, 2) + ";\n";
+
+    var blob = new Blob([out], {type: "text/javascript"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "data.js";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // --- Helpers ----------------------------------------------------------------
+  function escapeAttr(str){
+    return String(str == null ? "" : str).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+
+  function flashSaved(id){
+    var el = document.getElementById(id);
+    el.textContent = "Saved to this browser ✓";
+    setTimeout(function(){ el.textContent = ""; }, 2500);
+  }
+</script>
+</body>
+</html>

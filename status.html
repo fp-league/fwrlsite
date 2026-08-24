@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="FWRL live status — is the bot online, is the standings feed up to date." />
+<title>Status — FWRL</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230a0a0d'/%3E%3Ctext x='50' y='68' font-size='60' text-anchor='middle' fill='%23ff2e4d'%3E%E2%97%A2%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="style.css" />
+<style>
+  .status-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:16px; margin-top:28px;}
+  .status-card{
+    background:var(--bg-panel); border:1px solid var(--border); border-radius:12px;
+    padding:20px; display:flex; align-items:flex-start; gap:14px;
+  }
+  .status-dot{
+    width:12px; height:12px; border-radius:50%; margin-top:5px; flex-shrink:0;
+    background:var(--text-dim);
+  }
+  .status-dot.up{background:var(--accent-2); box-shadow:0 0 10px rgba(0,224,198,0.6);}
+  .status-dot.down{background:var(--accent); box-shadow:0 0 10px rgba(255,46,77,0.5);}
+  .status-dot.warn{background:#ffd23f; box-shadow:0 0 10px rgba(255,210,63,0.5);}
+  .status-dot.inactive{background:var(--text-dim); box-shadow:none;}
+  .status-card h3{font-size:14px; font-weight:800; margin-bottom:4px;}
+  .status-card p{font-size:13px; color:var(--text-dim); line-height:1.5;}
+  .not-active-badge{
+    display:inline-block; font-size:10px; font-weight:800; text-transform:uppercase;
+    letter-spacing:0.5px; color:var(--text-dim); background:var(--bg-panel-2);
+    border:1px solid var(--border); border-radius:20px; padding:2px 8px; margin-left:6px;
+    vertical-align:middle;
+  }
+  .status-headline{
+    display:flex; align-items:center; gap:12px; background:var(--bg-panel);
+    border:1px solid var(--border); border-radius:12px; padding:20px 24px; margin-top:24px;
+  }
+  .status-headline .status-dot{width:14px; height:14px; margin-top:0;}
+  .status-headline b{font-size:16px;}
+  .status-meta{font-size:12px; color:var(--text-dim); margin-top:6px;}
+  .refresh-row{display:flex; align-items:center; gap:12px; margin-top:20px; flex-wrap:wrap;}
+  .refresh-row input{
+    background:var(--bg-panel-2); border:1px solid var(--border); color:var(--text);
+    padding:9px 12px; border-radius:7px; font-size:12px; width:240px;
+  }
+  .refresh-row button{
+    background:var(--bg-panel-2); border:1px solid var(--border); color:var(--text);
+    padding:9px 14px; border-radius:7px; cursor:pointer; font-size:12px; font-weight:700;
+  }
+  .refresh-row button:hover{border-color:var(--accent-2);}
+  .last-checked{font-size:11px; color:var(--text-dim); margin-top:10px;}
+  .unreachable-note{
+    background:rgba(255,46,77,0.08); border:1px solid rgba(255,46,77,0.25); color:var(--accent);
+    font-size:13px; padding:14px 16px; border-radius:10px; margin-top:20px; line-height:1.6; display:none;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">
+      <span class="bolt">◢◤</span>
+      <div>FWRL<small>FORTNITE WORLD RACING LEAGUE</small></div>
+    </div>
+    <nav>
+      <a class="nav-btn" href="index.html">Home</a>
+      <a class="nav-btn" href="standings.html">Standings</a>
+      <a class="nav-btn" href="schedule.html">Schedule</a>
+      <a class="nav-btn" href="teams.html">Teams</a>
+      <a class="nav-btn" href="discord.html">Discord</a>
+      <a class="nav-btn active" href="status.html">Status</a>
+    </nav>
+    <div class="header-right">
+      <a href="https://discord.gg/fwrl" target="_blank" rel="noopener noreferrer" class="discord-btn">Join Discord</a>
+      <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu">☰</button>
+    </div>
+  </header>
+  <nav class="mobile-nav" id="mobile-nav">
+    <a class="nav-btn" href="index.html">Home</a>
+    <a class="nav-btn" href="standings.html">Standings</a>
+    <a class="nav-btn" href="schedule.html">Schedule</a>
+    <a class="nav-btn" href="teams.html">Teams</a>
+    <a class="nav-btn" href="discord.html">Discord</a>
+    <a class="nav-btn active" href="status.html">Status</a>
+  </nav>
+
+  <main>
+    <section class="page-content">
+      <div class="eyebrow">System Status</div>
+      <h2>FWRL Live Status</h2>
+      <p class="subtitle">Live health of the FWRL backend — the bot, the Discord connection, and the race data feed. Refreshes automatically every 10 seconds.</p>
+
+      <div class="status-headline" id="headline">
+        <div class="status-dot" id="headline-dot"></div>
+        <div>
+          <b id="headline-text">Checking status…</b>
+          <div class="status-meta" id="headline-meta"></div>
+        </div>
+      </div>
+
+      <div class="status-grid" id="status-grid">
+        <!-- filled in by script below -->
+      </div>
+
+      <div class="unreachable-note" id="unreachable-note">
+        Can't reach the FWRL bot. This page pulls live status from <code>bot.py</code>'s <code>/health</code> endpoint — if it's not running, or not reachable from here, everything above will show as offline. If the bot runs on a different machine, set its address below.
+      </div>
+
+      <div class="refresh-row">
+        <input type="text" id="bot-url-input" placeholder="http://127.0.0.1:8765" />
+        <button id="refresh-btn">Refresh now</button>
+      </div>
+      <div class="last-checked" id="last-checked"></div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="foot-links">
+      <a href="index.html">Home</a>
+      <a href="standings.html">Standings</a>
+      <a href="schedule.html">Schedule</a>
+      <a href="teams.html">Teams</a>
+      <a href="discord.html">Discord</a>
+      <a href="status.html">Status</a>
+    </div>
+    <div>© 2026 Fortnite World Racing League. Fan-run community league — not affiliated with or endorsed by Epic Games.</div>
+    <div style="margin-top:8px;"><a href="fwrl-admin.html" style="color:var(--text-dim); text-decoration:underline; cursor:pointer;">League Admin</a></div>
+  </footer>
+</div>
+
+<script src="script.js"></script>
+<script>
+  var BOT_URL_KEY = "fwrl_admin_bot_url"; // shared with fwrl-admin.html so you only set it once
+  var DEFAULT_BOT_URL = "http://127.0.0.1:8765";
+  var POLL_INTERVAL_MS = 10000;
+
+  var botUrlInput = document.getElementById("bot-url-input");
+  botUrlInput.value = localStorage.getItem(BOT_URL_KEY) || DEFAULT_BOT_URL;
+  botUrlInput.addEventListener("change", function () {
+    localStorage.setItem(BOT_URL_KEY, botUrlInput.value.trim());
+    checkStatus();
+  });
+
+  function getBotUrl() {
+    return (localStorage.getItem(BOT_URL_KEY) || DEFAULT_BOT_URL).replace(/\/$/, "");
+  }
+
+  function fmtUptime(seconds) {
+    if (seconds == null) return "—";
+    var h = Math.floor(seconds / 3600);
+    var m = Math.floor((seconds % 3600) / 60);
+    var s = Math.floor(seconds % 60);
+    if (h > 0) return h + "h " + m + "m";
+    if (m > 0) return m + "m " + s + "s";
+    return s + "s";
+  }
+
+  function fmtRelative(isoString) {
+    if (!isoString) return "no data yet";
+    var diffMs = Date.now() - new Date(isoString).getTime();
+    var diffSec = Math.round(diffMs / 1000);
+    if (diffSec < 5) return "just now";
+    if (diffSec < 60) return diffSec + "s ago";
+    var diffMin = Math.round(diffSec / 60);
+    if (diffMin < 60) return diffMin + "m ago";
+    var diffHr = Math.round(diffMin / 60);
+    return diffHr + "h ago";
+  }
+
+  function card(status, title, text, badge) {
+    var cls = status === "up" ? "up" : status === "warn" ? "warn" : status === "inactive" ? "inactive" : "down";
+    var badgeHtml = badge ? "<span class=\"not-active-badge\">" + badge + "</span>" : "";
+    return (
+      "<div class=\"status-card\">" +
+      "<div class=\"status-dot " + cls + "\"></div>" +
+      "<div><h3>" + title + badgeHtml + "</h3><p>" + text + "</p></div>" +
+      "</div>"
+    );
+  }
+
+  function renderOffline() {
+    document.getElementById("headline-dot").className = "status-dot down";
+    document.getElementById("headline-text").textContent = "FWRL backend unreachable";
+    document.getElementById("headline-meta").textContent = "Checked " + getBotUrl();
+    document.getElementById("status-grid").innerHTML = "";
+    document.getElementById("unreachable-note").style.display = "block";
+  }
+
+  // Live timing (the screen-reading capture agent) hasn't shipped yet — this
+  // is a known, expected "off" state, not a fault. Keep it out of the
+  // headline's pass/fail judgment so the page doesn't cry wolf about a
+  // feature that was never turned on in the first place.
+  var LIVE_TIMING_BUILT = false;
+
+  function renderStatus(data) {
+    document.getElementById("unreachable-note").style.display = "none";
+
+    var concerns = data.bot_connected && data.stale_drivers === 0;
+    document.getElementById("headline-dot").className = "status-dot " + (data.bot_connected ? (concerns ? "up" : "warn") : "down");
+    document.getElementById("headline-text").textContent = data.bot_connected
+      ? (concerns ? "All systems operational" : "Bot online, some checks need attention")
+      : "Bot process reachable, but not connected to Discord";
+    document.getElementById("headline-meta").textContent = "Uptime: " + fmtUptime(data.uptime_seconds);
+
+    var cards = "";
+    cards += card(data.bot_connected ? "up" : "down", "Discord Connection",
+      data.bot_connected ? "Bot is connected and online." : "Bot process is running but hasn't connected to Discord yet.");
+
+    if (!LIVE_TIMING_BUILT) {
+      cards += card("inactive", "Live Timing",
+        "No automated screen-reading capture agent is running yet — standings and pit data are entered manually until this feature ships.",
+        "Not Active");
+    } else {
+      var raceStatus = data.drivers_tracked === 0 ? "inactive" : (data.stale_drivers > 0 ? "warn" : "up");
+      cards += card(raceStatus, "Live Timing",
+        data.drivers_tracked === 0
+          ? "No active race data right now (normal outside of race time)."
+          : data.drivers_tracked + " driver(s) tracked, " + data.stale_drivers + " stale. Last update " + fmtRelative(data.last_update) + ".");
+    }
+
+    cards += card(data.embed_loop_running ? "up" : "warn", "Live Standings Embed",
+      data.embed_loop_running ? "Posting/updating the standings embed on schedule." : "Not currently running (idle between races, or bot not connected).");
+
+    cards += card(data.standings_channel_configured ? "up" : "warn", "Standings Channel",
+      data.standings_channel_configured ? "A standings channel is configured." : "No STANDINGS_CHANNEL_ID set.");
+
+    cards += card(data.guild_configured ? (data.guild_reachable ? "up" : "down") : "warn", "FWRL Discord Server",
+      !data.guild_configured ? "No DISCORD_GUILD_ID configured — admin login is disabled." :
+      data.guild_reachable ? "Bot is a member of the configured server." : "Bot is not in the configured server.");
+
+    cards += card(data.admin_login_configured ? "up" : "warn", "Admin Login",
+      data.admin_login_configured ? "Discord login is configured for the admin dashboard." : "Not configured — see ADMIN-LOGIN-SETUP.md.");
+
+    document.getElementById("status-grid").innerHTML = cards;
+  }
+
+  function checkStatus() {
+    document.getElementById("last-checked").textContent = "Checking...";
+    fetch(getBotUrl() + "/health", { cache: "no-store" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("bad response");
+        return r.json();
+      })
+      .then(function (data) {
+        renderStatus(data);
+        document.getElementById("last-checked").textContent = "Last checked " + new Date().toLocaleTimeString();
+      })
+      .catch(function () {
+        renderOffline();
+        document.getElementById("last-checked").textContent = "Last checked " + new Date().toLocaleTimeString() + " (unreachable)";
+      });
+  }
+
+  document.getElementById("refresh-btn").addEventListener("click", checkStatus);
+
+  checkStatus();
+  setInterval(checkStatus, POLL_INTERVAL_MS);
+</script>
+</body>
+</html>
